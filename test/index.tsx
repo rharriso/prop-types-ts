@@ -51,6 +51,13 @@ describe('getPropTypes', () => {
     assertError(T, { a: -1 }, '\nInvalid value {"a":-1} supplied to : ({ a: number } | <function1>)')
   });
 
+  it('should handle unions', function () {
+    const T = t.union([t.interface({ a: t.string }), t.interface({ b: t.number })])
+    assertNoError(T, { a: 's' })
+    assertNoError(T, { b: 1 })
+    assertError(T, { a: 's', b: 1 }, '\nInvalid additional prop(s): ["b"]')
+  });
+
 })
 
 describe('Pre-defined types', () => {

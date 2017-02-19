@@ -5,7 +5,7 @@ import * as React from 'react'
 
 const noop = () => {}
 
-export type PropType = t.InterfaceType<any> | t.RefinementType<t.InterfaceType<any>>;
+export type PropType = t.InterfaceType<any> | t.RefinementType<t.InterfaceType<any>> | t.UnionType<any, any>;
 
 export type Options = {
   strict?: boolean,
@@ -22,11 +22,18 @@ function getExcessProps(values: Object, props: t.Props): Array<string> {
   return excess
 }
 
-function getProps(type: PropType): t.Props {
+function getProps(values: any, type: PropType): t.Props {
   if (type instanceof t.InterfaceType) {
     return type.props
   }
-  return getProps(type.type as t.InterfaceType<any>)
+  if (type instanceof t.UnionType) {
+    for (const u of type.types) {
+      if (u.is(values)) {
+        return getProps(values, u)
+      }
+    }
+  }
+  return getProps(values, (type as any).type)
 }
 
 export function getPropTypes(type: PropType, options: Options = { strict: true }) {
@@ -43,7 +50,7 @@ export function getPropTypes(type: PropType, options: Options = { strict: true }
         () => new Error('\n' + PathReporter.report(validation).join('\n')),
         () => {
           if (options.strict) {
-            const excess = getExcessProps(values, getProps(type))
+            const excess = getExcessProps(values, getProps(values, type))
             if (excess.length > 0) {
               return new Error(`\nInvalid additional prop(s): ${JSON.stringify(excess)}`);
             }
